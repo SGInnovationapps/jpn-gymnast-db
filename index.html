@@ -765,18 +765,49 @@ const LS_TOKEN = 'gymnast_token';
 const LS_STAFF = 'gymnast_staff';
 
 // ============================================================
-//  API 呼び出し
-//  GAS は /exec → googleusercontent.com にリダイレクトして応答する。
-//  CORSプリフライトを発生させないため、独自ヘッダを付けない
-//  「シンプルリクエスト」で送る（bodyはプレーン文字列のJSON）。
+//  API 呼び出し（JSONP方式）
+//  GAS は fetch のクロスオリジン通信に必要な CORS ヘッダを返せないため、
+//  <script>タグで読み込むJSONPで呼ぶ（CORSの制約を受けない）。
+//  GAS側は callback パラメータに対応済み。
 // ============================================================
+var _jsonpSeq = 0;
 function apiCall(payload) {
-  return fetch(API_URL, {
-    method: 'POST',
-    body: JSON.stringify(payload),
-    redirect: 'follow'
-  }).then(function (res) {
-    return res.json();
+  return new Promise(function (resolve, reject) {
+    _jsonpSeq++;
+    var cbName = '__gymnastCb' + _jsonpSeq + '_' + Date.now();
+
+    // パラメータをURLクエリに組み立て
+    var params = ['callback=' + encodeURIComponent(cbName)];
+    for (var k in payload) {
+      if (payload[k] == null) continue;
+      params.push(encodeURIComponent(k) + '=' + encodeURIComponent(payload[k]));
+    }
+    var src = API_URL + '?' + params.join('&');
+
+    var script = document.createElement('script');
+    var timer = setTimeout(function () {
+      cleanup();
+      reject(new Error('応答がタイムアウトしました'));
+    }, 30000);
+
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+
+    window[cbName] = function (data) {
+      cleanup();
+      resolve(data);
+    };
+
+    script.onerror = function () {
+      cleanup();
+      reject(new Error('通信に失敗しました'));
+    };
+
+    script.src = src;
+    document.head.appendChild(script);
   });
 }
 
