@@ -1,0 +1,1596 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Gymnastデータベース</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="./manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Gymnast">
+  <meta name="mobile-web-app-capable" content="yes">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --c-border-light: #e2e2e2;
+      --c-border: #c8c8c8;
+      --c-border-strong: #888;
+      --c-text-primary: #1a1a1a;
+      --c-text-secondary: #6b7280;
+      --c-accent: #1e3a8a;
+      --c-accent-light: #3b82f6;
+      --c-row-best:  #fff5cc;
+      --c-row-aa:    #d8e5f6;
+      --c-row-top3:  #d9ecd6;
+      --c-row-best-strong: #ffe89a;
+      --c-row-aa-strong:   #b8d2ef;
+      --c-row-top3-strong: #b8dfb3;
+      --c-bg-header-cell: #f5f5f5;
+      --c-player-hl: #fff5cc;
+      --c-player-hl-strong: #ffe89a;
+    }
+    html, body { background: #ffffff; }
+    body {
+      font-family: 'Yu Gothic UI', 'Meiryo UI', 'Hiragino Sans', sans-serif;
+      font-size: 11px;
+      color: var(--c-text-primary);
+      padding: 12px 18px;
+      min-width: 0;
+    }
+
+    /* =========================================================
+       ログイン画面
+       ========================================================= */
+    #login {
+      min-height: 80vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .login-card {
+      width: 100%;
+      max-width: 360px;
+      border: 1px solid var(--c-border);
+      border-radius: 10px;
+      padding: 28px 24px 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      background: #fff;
+    }
+    .login-logo {
+      font-family: 'Helvetica Neue', 'Hiragino Sans', sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      text-align: center;
+      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #60a5fa 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: #1e3a8a;
+      margin-bottom: 4px;
+    }
+    .login-sub {
+      text-align: center;
+      font-size: 12px;
+      color: var(--c-text-secondary);
+      margin-bottom: 22px;
+    }
+    .login-field { margin-bottom: 14px; }
+    .login-field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 5px;
+    }
+    .login-field input {
+      width: 100%;
+      font-family: inherit;
+      font-size: 15px;
+      padding: 11px 12px;
+      border: 1.5px solid var(--c-border);
+      border-radius: 6px;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+    .login-field input:focus { border-color: var(--c-accent-light); }
+    .login-btn {
+      width: 100%;
+      margin-top: 6px;
+      padding: 12px;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 700;
+      color: #fff;
+      background: #2563eb;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .login-btn:hover { background: #1d4ed8; }
+    .login-btn:disabled { background: #9ca3af; cursor: default; }
+    .login-error {
+      margin-top: 14px;
+      font-size: 12px;
+      color: #dc2626;
+      text-align: center;
+      min-height: 16px;
+    }
+    .login-note {
+      margin-top: 18px;
+      font-size: 10.5px;
+      color: var(--c-text-secondary);
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    /* =========================================================
+       共通：ヘッダー
+       ========================================================= */
+    .header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      gap: 12px;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .header-right { text-align: right; }
+    .app-title {
+      font-family: 'Helvetica Neue', 'Hiragino Sans', sans-serif;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #60a5fa 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      color: #1e3a8a;
+      padding: 2px 4px;
+      position: relative;
+    }
+    .app-title::after {
+      content: '';
+      position: absolute;
+      left: 4px; right: 4px; bottom: -2px;
+      height: 2px;
+      background: linear-gradient(90deg, #1e3a8a 0%, #60a5fa 60%, transparent 100%);
+      border-radius: 2px;
+    }
+    .org-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: #374151;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+    .staff-badge {
+      font-size: 10.5px;
+      color: var(--c-text-secondary);
+      margin-bottom: 6px;
+    }
+    .logout-link {
+      font-size: 10.5px;
+      color: var(--c-accent-light);
+      cursor: pointer;
+      text-decoration: underline;
+      margin-left: 8px;
+    }
+
+    .player-select-wrap {
+      position: relative;
+      border: 1.5px solid var(--c-text-primary);
+      border-radius: 4px;
+      padding: 4px 28px 4px 12px;
+      min-width: 200px;
+      text-align: center;
+      background: #fff;
+    }
+    .player-select-wrap::after {
+      content: '\25BC';
+      position: absolute;
+      right: 10px; top: 50%;
+      transform: translateY(-50%);
+      font-size: 9px;
+      color: var(--c-text-secondary);
+      pointer-events: none;
+    }
+    .player-select-wrap select {
+      border: none; background: transparent;
+      font-family: inherit; font-size: 13px; font-weight: 600;
+      outline: none; width: 100%;
+      text-align: center; text-align-last: center;
+      cursor: pointer;
+      -webkit-appearance: none; -moz-appearance: none; appearance: none;
+      color: var(--c-text-primary);
+    }
+
+    .filter-box { font-size: 11px; text-align: left; display: inline-block; }
+    .filter-title { font-weight: 600; margin-bottom: 4px; color: #374151; }
+    .filter-item { display: flex; align-items: center; gap: 6px; margin: 1.5px 0; }
+    .filter-item input[type="checkbox"] {
+      cursor: pointer; width: 13px; height: 13px; accent-color: #2563eb;
+    }
+    .filter-item label { cursor: pointer; user-select: none; }
+
+    .section-title {
+      font-size: 13px; font-weight: 700;
+      margin: 8px 0 4px 4px; color: #1f2937;
+      display: inline-block;
+      border-left: 3px solid #2563eb;
+      padding-left: 8px; line-height: 1.1;
+    }
+
+    /* Tabs */
+    .tab-bar {
+      display: flex; gap: 2px;
+      border-bottom: 2px solid #2563eb;
+      margin: 2px 0 10px 0;
+    }
+    .tab {
+      background: #f3f4f6;
+      border: 1px solid #d1d5db;
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      padding: 6px 18px;
+      font-family: inherit; font-size: 12px; font-weight: 500;
+      color: #6b7280; cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative; top: 1px;
+    }
+    .tab:hover { background: #e5e7eb; color: #1f2937; }
+    .tab.active {
+      background: #2563eb; color: #fff;
+      border-color: #2563eb; font-weight: 600;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Ranking page */
+    .ranking-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px; margin-bottom: 8px;
+    }
+    .ranking-block {
+      border: 1px solid var(--c-border);
+      border-radius: 2px; overflow: hidden;
+      page-break-inside: avoid;
+    }
+    .ranking-event-name {
+      text-align: center; font-size: 11.5px; font-weight: 600;
+      padding: 3px 0; border-bottom: 1px solid var(--c-border);
+      background: var(--c-bg-header-cell); color: #1f2937; letter-spacing: 0.5px;
+    }
+    .ranking-table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+    .ranking-table thead th {
+      background: #fafafa; color: #6b7280; font-size: 9.5px; font-weight: 500;
+      padding: 2px 4px; border-bottom: 1px solid var(--c-border);
+    }
+    .ranking-table td {
+      padding: 2px 5px;
+      border-right: 1px solid var(--c-border-light);
+      border-bottom: 1px solid var(--c-border-light);
+      text-align: right; white-space: nowrap;
+    }
+    .ranking-table tr:last-child td { border-bottom: none; }
+    .ranking-table td:last-child { border-right: none; }
+    .ranking-table td.rank-num { width: 26px; text-align: center; color: #6b7280; font-weight: 600; }
+    .ranking-table td.name {
+      text-align: left; max-width: 200px; overflow: hidden;
+      text-overflow: ellipsis; color: #1f2937;
+    }
+    .ranking-table td.score-cell { font-weight: 700; background: #fafafa; }
+    .src-tag {
+      display: inline-block; font-size: 8.5px; font-weight: 600;
+      padding: 0 4px; border-radius: 2px; margin-right: 4px;
+      letter-spacing: 0.3px; vertical-align: 1px;
+    }
+    .src-tag.src-world { background: #e5e7eb; color: #4b5563; }
+    .src-tag.src-jp { background: #dbeafe; color: #1e40af; }
+    .ranking-table td.rank-num.rank-1 { color: #b45309; font-weight: 700; }
+    .ranking-table td.rank-num.rank-2 { color: #525252; font-weight: 700; }
+    .ranking-table td.rank-num.rank-3 { color: #92400e; font-weight: 700; }
+    .ranking-table tr.current-player td { background: var(--c-player-hl); }
+    .ranking-table tr.current-player td.score-cell { background: var(--c-player-hl-strong); }
+    .ranking-table tr.current-player td.name { font-weight: 600; }
+
+    /* Personal data */
+    .personal-row { margin-bottom: 6px; }
+    .personal-scroll { overflow-x: visible; }
+    .personal-table { border-collapse: collapse; font-size: 11px; }
+    .personal-table th, .personal-table td {
+      padding: 2.5px 6px; text-align: right;
+      border: 1px solid var(--c-border); white-space: nowrap; font-weight: 400;
+    }
+    .personal-table th.label-col {
+      border: none; background: transparent !important; width: 165px;
+    }
+    .personal-table td.row-label {
+      border: none; text-align: right; padding-right: 12px;
+      font-size: 11.5px; font-weight: 500; width: 165px;
+      color: #374151; background: transparent !important;
+    }
+    .personal-table .event-name-cell {
+      text-align: center; font-weight: 600; font-size: 12px;
+      background: var(--c-bg-header-cell); padding: 4px 8px;
+      color: #1f2937; letter-spacing: 0.5px;
+    }
+    .personal-table .event-name-cell .pct {
+      display: inline-block; margin-left: 14px; font-size: 11px;
+      color: #555; font-weight: 500; cursor: help; letter-spacing: 0;
+    }
+    .personal-table .col-headers-row th {
+      color: #555; background: #fafafa; font-size: 10.5px; font-weight: 500;
+      min-width: 38px; padding: 2px 4px;
+    }
+    .personal-table .col-headers-row th.score-h { min-width: 56px; }
+    .personal-table .row-best td:not(.row-label) { background: var(--c-row-best); }
+    .personal-table .row-aa   td:not(.row-label) { background: var(--c-row-aa); }
+    .personal-table .row-top3 td:not(.row-label) { background: var(--c-row-top3); }
+    .personal-table .row-best td.score-cell { background: var(--c-row-best-strong); font-weight: 700; }
+    .personal-table .row-aa   td.score-cell { background: var(--c-row-aa-strong);   font-weight: 700; }
+    .personal-table .row-top3 td.score-cell { background: var(--c-row-top3-strong); font-weight: 700; }
+    .personal-table tr.tip-row { cursor: help; }
+    .personal-table tr.tip-row:hover td:not(.row-label) { filter: brightness(0.95); }
+
+    /* World ranking comparison */
+    .ranking-controls {
+      display: flex; align-items: center; gap: 16px; margin: 4px 0 8px 0; flex-wrap: wrap;
+    }
+    .ranking-controls .label {
+      font-weight: 700; font-size: 13px; color: #1f2937;
+      border-left: 3px solid #2563eb; padding-left: 8px; line-height: 1.1;
+    }
+    .sort-label { color: #6b7280; font-size: 11px; }
+    .sort-options { display: flex; gap: 10px; }
+    .sort-options label { display: flex; align-items: center; gap: 4px; cursor: pointer; font-size: 11px; }
+    .sort-options input[type="radio"] { accent-color: #2563eb; }
+
+    .compare-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 8px; margin-bottom: 6px;
+    }
+    .compare-block { border: 1px solid var(--c-border); border-radius: 2px; overflow: hidden; }
+    .compare-event-name {
+      text-align: center; font-size: 11.5px; font-weight: 600;
+      padding: 3px 0; border-bottom: 1px solid var(--c-border);
+      background: var(--c-bg-header-cell); color: #1f2937; letter-spacing: 0.5px;
+    }
+    .compare-table { width: 100%; border-collapse: collapse; font-size: 10.5px; }
+    .compare-table td {
+      padding: 2px 5px;
+      border-right: 1px solid var(--c-border-light);
+      border-bottom: 1px solid var(--c-border-light);
+      text-align: right; white-space: nowrap;
+    }
+    .compare-table tr:last-child td { border-bottom: none; }
+    .compare-table td:last-child { border-right: none; }
+    .compare-table td.name {
+      text-align: left; max-width: 160px; overflow: hidden;
+      text-overflow: ellipsis; color: #1f2937;
+    }
+    .compare-table td.score-cell { font-weight: 700; background: #fafafa; }
+    .compare-table tr.player-row td { background: var(--c-player-hl); }
+    .compare-table tr.player-row td.name { font-weight: 600; }
+    .compare-table tr.player-row td.score-cell { background: var(--c-player-hl-strong); }
+    .compare-table td.empty { color: #bbb; }
+
+    .bottom-grid {
+      display: grid; grid-template-columns: 1.1fr 1fr;
+      gap: 10px; margin-top: 4px;
+    }
+    .vt-table {
+      width: 100%; border-collapse: collapse; font-size: 10.5px;
+      border: 1px solid var(--c-border); border-radius: 2px;
+    }
+    .vt-table td { padding: 2px 5px; border: 1px solid var(--c-border-light); text-align: right; white-space: nowrap; }
+    .vt-table td.name { text-align: left; vertical-align: middle; max-width: 160px; color: #1f2937; }
+    .vt-table td.avg { vertical-align: middle; font-weight: 700; background: #fafafa; }
+    .vt-table .compare-event-name {
+      text-align: center; padding: 3px 0; background: var(--c-bg-header-cell);
+      font-weight: 600; font-size: 11.5px; color: #1f2937;
+      letter-spacing: 0.5px; border-bottom: 1px solid var(--c-border);
+    }
+    .vt-table tr.player-row td { background: var(--c-player-hl); }
+    .vt-table tr.player-row td.name { font-weight: 600; }
+    .vt-table tr.player-row td.avg { background: var(--c-player-hl-strong); }
+
+    #loading { text-align: center; padding: 40px; font-size: 14px; color: #666; }
+    .error-msg { color: #c00; padding: 12px; border: 1px solid #c00; background: #fff5f5; margin: 12px 0; }
+
+    #app { display: none; }
+    #login { display: none; }
+
+    .pct.rank-blue   { color: #1d4ed8; font-weight: 700; }
+    .pct.rank-orange { color: #ea580c; font-weight: 700; }
+    .pct.rank-red    { color: #dc2626; font-weight: 700; }
+
+    .stability-note {
+      font-size: 10px; color: #6b7280; margin: 2px 0 4px 12px;
+      font-style: italic; display: inline-block;
+    }
+    .section-row { display: flex; align-items: baseline; gap: 4px; margin-bottom: 2px; flex-wrap: wrap; }
+
+    .action-buttons { display: flex; gap: 8px; margin-left: 12px; }
+    .action-btn {
+      font-size: 11px; padding: 5px 14px; background: #fff;
+      border: 1px solid #c0c0c0; border-radius: 4px; cursor: pointer;
+      font-family: inherit; color: #374151; font-weight: 500;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04); transition: all 0.15s ease;
+    }
+    .action-btn:hover { background: #f9fafb; border-color: #2563eb; color: #2563eb; }
+    .action-btn:active { background: #eff6ff; transform: translateY(1px); }
+
+    /* モバイル時のカード見出し（PCでは非表示） */
+    .m-event-head { display: none; }
+
+    /* =========================================================
+       印刷専用
+       ========================================================= */
+    @page { size: A4 landscape; margin: 7mm; }
+    @media print {
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+      body { padding: 0; font-size: 9px; }
+      .action-buttons, .filter-box, .logout-link, .staff-badge { display: none !important; }
+      .tab-bar { display: none !important; }
+      .ranking-controls .sort-label, .ranking-controls .sort-options { display: none !important; }
+      .header { margin-bottom: 4px; }
+      .section-title { margin: 4px 0 2px 4px; font-size: 10.5px; }
+      .stability-note { font-size: 8.5px; }
+      .personal-row { margin-bottom: 4px; }
+      .personal-table { font-size: 8.5px; }
+      .personal-table .event-name-cell { font-size: 9.5px; padding: 2px 4px; }
+      .personal-table .col-headers-row th { font-size: 8.5px; min-width: 26px; padding: 1px 3px; }
+      .personal-table th, .personal-table td { padding: 1.5px 4px; }
+      .personal-table th.label-col, .personal-table td.row-label { width: 135px; font-size: 9.5px; }
+      .compare-table { font-size: 8.5px; }
+      .compare-event-name { font-size: 10px; padding: 2px 0; }
+      .vt-table { font-size: 8.5px; }
+      .vt-table .compare-event-name { font-size: 10px; }
+      .compare-table td, .vt-table td { padding: 1px 3px; }
+      .compare-grid { gap: 6px; margin-bottom: 4px; }
+      .bottom-grid { gap: 8px; margin-top: 4px; }
+      .personal-table tr.tip-row:hover td { filter: none !important; }
+      .personal-row, .compare-grid, .bottom-grid { page-break-inside: avoid; }
+      .app-title { -webkit-text-fill-color: #1e3a8a; background: none; color: #1e3a8a; }
+      /* 印刷では常にPCレイアウト */
+      .tab-content { display: block !important; }
+      .ranking-grid { grid-template-columns: repeat(3, 1fr) !important; }
+      .compare-grid { grid-template-columns: repeat(3, 1fr) !important; }
+      .bottom-grid { grid-template-columns: 1.1fr 1fr !important; }
+    }
+
+    /* =========================================================
+       スマホ用レイアウト（画面幅 ≤ 760px）
+       ========================================================= */
+    @media screen and (max-width: 760px) {
+      body { padding: 8px 10px; font-size: 13px; }
+
+      .header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+      .header-left {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+      }
+      .header-right { text-align: left; }
+      .app-title { font-size: 20px; text-align: center; }
+      .org-name { text-align: center; }
+      .staff-badge { text-align: center; }
+
+      .player-select-wrap {
+        min-width: 0; width: 100%;
+        padding: 10px 32px 10px 14px;
+      }
+      .player-select-wrap select { font-size: 16px; }
+
+      .action-buttons {
+        margin-left: 0;
+        justify-content: stretch;
+      }
+      .action-btn { flex: 1; padding: 10px; font-size: 13px; }
+
+      .filter-box {
+        display: block;
+        border: 1px solid var(--c-border);
+        border-radius: 8px;
+        padding: 10px 12px;
+      }
+      .filter-title { font-size: 13px; margin-bottom: 6px; }
+      .filter-item { margin: 5px 0; }
+      .filter-item input[type="checkbox"] { width: 18px; height: 18px; }
+      .filter-item label { font-size: 13px; }
+
+      /* タブを横スクロール可能に */
+      .tab-bar {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        gap: 4px;
+      }
+      .tab {
+        flex: 0 0 auto;
+        padding: 9px 14px;
+        font-size: 13px;
+        border-radius: 6px;
+        border-bottom: 1px solid #d1d5db;
+        top: 0;
+      }
+      .tab.active { border-bottom: 1px solid #2563eb; }
+
+      .section-title { font-size: 15px; }
+      .stability-note { margin-left: 4px; font-size: 11px; }
+
+      /* ---- 個人データ：種目ごとに縦積みカード化 ---- */
+      .personal-row { margin-bottom: 0; }
+      .personal-table {
+        display: block;
+        width: 100%;
+        margin-bottom: 14px;
+        border: 1px solid var(--c-border);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      .personal-table thead { display: none; }
+      .personal-table tbody { display: block; }
+      .personal-table tr { display: block; }
+
+      /* モバイルでは JS が生成する .m-card 構造を使うため、
+         通常の personal-table は隠し、モバイル専用描画に切替 */
+
+      /* ---- ランキング / 比較：1カラムに ---- */
+      .ranking-grid { grid-template-columns: 1fr; gap: 12px; }
+      .compare-grid { grid-template-columns: 1fr; gap: 12px; }
+      .bottom-grid { grid-template-columns: 1fr; gap: 12px; }
+
+      .ranking-table { font-size: 13px; }
+      .ranking-table thead th { font-size: 11px; padding: 5px 4px; }
+      .ranking-table td { padding: 6px 6px; }
+      .ranking-event-name { font-size: 14px; padding: 7px 0; }
+
+      .compare-table { font-size: 13px; }
+      .compare-table td { padding: 6px 6px; }
+      .compare-event-name { font-size: 14px; padding: 7px 0; }
+      .vt-table { font-size: 13px; }
+      .vt-table td { padding: 6px 6px; }
+      .vt-table .compare-event-name { font-size: 14px; padding: 7px 0; }
+
+      .ranking-controls { gap: 10px; }
+
+      /* モバイル個人データカード */
+      .m-card {
+        border: 1px solid var(--c-border);
+        border-radius: 8px;
+        overflow: hidden;
+        margin-bottom: 14px;
+      }
+      .m-card-head {
+        background: var(--c-bg-header-cell);
+        padding: 9px 12px;
+        font-size: 15px;
+        font-weight: 700;
+        color: #1f2937;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--c-border);
+      }
+      .m-card-head .pct { font-size: 13px; }
+      .m-card table { width: 100%; border-collapse: collapse; font-size: 13px; }
+      .m-card table td {
+        padding: 7px 10px;
+        border-bottom: 1px solid var(--c-border-light);
+        text-align: right;
+        white-space: nowrap;
+      }
+      .m-card table td:first-child {
+        text-align: left;
+        color: #6b7280;
+        width: 84px;
+        font-weight: 500;
+      }
+      .m-card .m-sub {
+        background: #fafafa;
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #374151;
+        border-bottom: 1px solid var(--c-border-light);
+      }
+      .m-card .m-sub.best { background: var(--c-row-best); }
+      .m-card .m-sub.aa   { background: var(--c-row-aa); }
+      .m-card .m-sub.top3 { background: var(--c-row-top3); }
+    }
+
+    /* PCではモバイル専用カードを隠す */
+    @media screen and (min-width: 761px) {
+      .m-personal-cards { display: none !important; }
+    }
+    @media print {
+      .m-personal-cards { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== ログイン画面 ===== -->
+<div id="login">
+  <div class="login-card">
+    <div class="login-logo">Gymnastデータベース</div>
+    <div class="login-sub">男子強化本部</div>
+
+    <div class="login-field">
+      <label for="loginEmail">メールアドレス</label>
+      <input type="email" id="loginEmail" autocomplete="email" inputmode="email" placeholder="your@example.com">
+    </div>
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">ログイン</button>
+    <div class="login-error" id="loginError"></div>
+    <div class="login-note">
+      登録されたメールアドレスでのみログインできます。<br>
+      ご不明な場合は管理者にお問い合わせください。
+    </div>
+  </div>
+</div>
+
+<!-- ===== ローディング ===== -->
+<div id="loading" style="display:none;">読み込み中…</div>
+
+<!-- ===== アプリ本体 ===== -->
+<div id="app">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="app-title">Gymnastデータベース</div>
+      <div class="player-select-wrap">
+        <select id="playerSelect"></select>
+      </div>
+      <div class="action-buttons">
+        <button class="action-btn" onclick="printPage()">印刷 / PDF保存</button>
+        <button class="action-btn" onclick="saveAsImage()">画像として保存</button>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="org-name">男子強化本部</div>
+      <div class="staff-badge">
+        <span id="staffName"></span>
+        <span class="logout-link" onclick="logout()">ログアウト</span>
+      </div>
+      <div class="filter-box">
+        <div class="filter-title">対象大会フィルター</div>
+        <div class="filter-item">
+          <input type="checkbox" id="filter-all" checked>
+          <label for="filter-all">すべて</label>
+        </div>
+        <div id="filterList"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab active" data-tab="personal" onclick="switchTab('personal')">個人データ</button>
+    <button class="tab" data-tab="ranking-best" onclick="switchTab('ranking-best')">ベスト得点ランキング</button>
+    <button class="tab" data-tab="ranking-top3" onclick="switchTab('ranking-top3')">ベスト3得点ランキング</button>
+  </div>
+
+  <!-- Tab: 個人データ -->
+  <div class="tab-content active" id="tab-personal">
+    <div class="section-row">
+      <div class="section-title">個人データ</div>
+      <div class="stability-note">安定度（％）：全得点平均 ／ ベストスコア　高いほど安定</div>
+    </div>
+
+    <!-- PC/印刷用 -->
+    <div class="personal-row" id="personalRow1"></div>
+    <div class="personal-row" id="personalRow2"></div>
+    <!-- スマホ用 -->
+    <div class="m-personal-cards" id="mPersonalCards"></div>
+
+    <div class="ranking-controls">
+      <div class="label">世界ランキング比較</div>
+      <div class="sort-label">ソート</div>
+      <div class="sort-options">
+        <label><input type="radio" name="sort" value="D"> D</label>
+        <label><input type="radio" name="sort" value="E"> E</label>
+        <label><input type="radio" name="sort" value="score" checked> スコア</label>
+      </div>
+    </div>
+
+    <div class="compare-grid" id="compareRow1"></div>
+    <div class="compare-grid" id="compareRow2"></div>
+
+    <div class="bottom-grid">
+      <div id="vtAvgBlock"></div>
+      <div id="aaBlock"></div>
+    </div>
+  </div>
+
+  <!-- Tab: ベスト得点ランキング -->
+  <div class="tab-content" id="tab-ranking-best">
+    <div class="section-row">
+      <div class="section-title">ベスト得点ランキング</div>
+      <div class="stability-note">各選手の種目別ベスト得点 + 世界ランキングTop3</div>
+    </div>
+    <div class="ranking-grid" id="rankingBestGrid"></div>
+  </div>
+
+  <!-- Tab: ベスト3得点ランキング -->
+  <div class="tab-content" id="tab-ranking-top3">
+    <div class="section-row">
+      <div class="section-title">ベスト3得点ランキング</div>
+      <div class="stability-note">各選手の種目別ベスト3得点の平均 + 世界ランキングTop3</div>
+    </div>
+    <div class="ranking-grid" id="rankingTop3Grid"></div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+//  Service Worker 登録（PWA）
+// ============================================================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./service-worker.js').catch(function (err) {
+      console.warn('Service Worker 登録に失敗:', err);
+    });
+  });
+}
+
+// ============================================================
+//  設定：GAS ウェブアプリの /exec URL をここに貼る
+// ============================================================
+const API_URL = 'PASTE_YOUR_GAS_EXEC_URL_HERE';
+
+const LS_TOKEN = 'gymnast_token';
+const LS_STAFF = 'gymnast_staff';
+
+// ============================================================
+//  API 呼び出し（CORS回避のため text/plain で POST）
+// ============================================================
+function apiCall(payload) {
+  return fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload),
+    redirect: 'follow'
+  }).then(function (res) {
+    return res.json();
+  });
+}
+
+// ============================================================
+//  状態
+// ============================================================
+const STATE = {
+  allScores: [],
+  worldRankings: {},
+  players: [],
+  competitions: [],
+  selectedPlayer: null,
+  selectedCompetitions: [],
+  sortKey: 'score',
+  activeTab: 'personal',
+  token: null,
+  staffName: null
+};
+
+const EVENT_KEYS = ['fx','ph','sr','vt','pb','hb'];
+const EVENT_LABELS = { fx:'ゆか', ph:'あん馬', sr:'つり輪', vt:'跳馬', pb:'平行棒', hb:'鉄棒', aa:'個人総合' };
+
+// ============================================================
+//  起動：保存済みトークンがあれば自動ログイン
+// ============================================================
+window.addEventListener('load', function () {
+  if (API_URL === 'PASTE_YOUR_GAS_EXEC_URL_HERE') {
+    showLogin();
+    document.getElementById('loginError').textContent =
+      'API_URL が未設定です。index.html の API_URL を GAS の /exec URL に変更してください。';
+    return;
+  }
+  var token = localStorage.getItem(LS_TOKEN);
+  var staff = localStorage.getItem(LS_STAFF);
+  if (token) {
+    STATE.token = token;
+    STATE.staffName = staff || '';
+    loadData(true);
+  } else {
+    showLogin();
+  }
+
+  // Enterキーでログイン
+  document.getElementById('loginEmail').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') doLogin();
+  });
+});
+
+function showLogin() {
+  document.getElementById('login').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loading').style.display = 'none';
+}
+
+function showLoading() {
+  document.getElementById('login').style.display = 'none';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('loading').style.display = 'block';
+}
+
+function showApp() {
+  document.getElementById('login').style.display = 'none';
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+}
+
+// ============================================================
+//  ログイン
+// ============================================================
+function doLogin() {
+  var email = document.getElementById('loginEmail').value.trim();
+  var errEl = document.getElementById('loginError');
+  var btn   = document.getElementById('loginBtn');
+  errEl.textContent = '';
+
+  if (!email) {
+    errEl.textContent = 'メールアドレスを入力してください';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = '確認中…';
+
+  apiCall({ action: 'login', email: email })
+    .then(function (res) {
+      btn.disabled = false;
+      btn.textContent = 'ログイン';
+      if (!res || !res.success) {
+        errEl.textContent = (res && res.error) ? res.error : 'ログインに失敗しました';
+        return;
+      }
+      STATE.token = res.token;
+      STATE.staffName = res.staffName;
+      localStorage.setItem(LS_TOKEN, res.token);
+      localStorage.setItem(LS_STAFF, res.staffName);
+      loadData(false);
+    })
+    .catch(function (err) {
+      btn.disabled = false;
+      btn.textContent = 'ログイン';
+      errEl.textContent = '通信エラー: ' + (err && err.message ? err.message : err);
+    });
+}
+
+function logout() {
+  localStorage.removeItem(LS_TOKEN);
+  localStorage.removeItem(LS_STAFF);
+  STATE.token = null;
+  STATE.staffName = null;
+  document.getElementById('loginEmail').value = '';
+  document.getElementById('loginError').textContent = '';
+  showLogin();
+}
+
+// ============================================================
+//  データ取得
+// ============================================================
+function loadData(silent) {
+  showLoading();
+  apiCall({ action: 'getData', token: STATE.token })
+    .then(function (data) {
+      if (!data || !data.success) {
+        // 認証切れ
+        if (data && data.error === 'AUTH') {
+          logout();
+          document.getElementById('loginError').textContent =
+            data.message || 'セッションが切れました。再度ログインしてください。';
+          return;
+        }
+        showLogin();
+        document.getElementById('loginError').textContent =
+          (data && data.error) ? data.error : 'データ取得に失敗しました';
+        return;
+      }
+      onDataLoaded(data);
+    })
+    .catch(function (err) {
+      showLogin();
+      document.getElementById('loginError').textContent =
+        '通信エラー: ' + (err && err.message ? err.message : err);
+    });
+}
+
+function onError(err) {
+  document.getElementById('loading').innerHTML =
+    '<div class="error-msg">エラー: ' + (err && err.message ? err.message : err) + '</div>';
+}
+
+function onDataLoaded(data) {
+  STATE.allScores = data.allScores;
+  STATE.worldRankings = data.worldRankings;
+  STATE.players = data.players;
+  STATE.competitions = data.competitions;
+  STATE.selectedPlayer = STATE.players[0] || null;
+
+  document.getElementById('staffName').textContent =
+    STATE.staffName ? (STATE.staffName + ' さん') : '';
+
+  buildPlayerSelect();
+  buildFilterList();
+  attachListeners();
+  render();
+
+  showApp();
+}
+
+// ============================================================
+//  UI構築
+// ============================================================
+function buildPlayerSelect() {
+  var sel = document.getElementById('playerSelect');
+  sel.innerHTML = '';
+  STATE.players.forEach(function (p) {
+    var opt = document.createElement('option');
+    opt.value = p;
+    opt.textContent = p;
+    if (p === STATE.selectedPlayer) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function buildFilterList() {
+  var list = document.getElementById('filterList');
+  list.innerHTML = '';
+  STATE.competitions.forEach(function (c, idx) {
+    var id = 'filter-' + idx;
+    var wrap = document.createElement('div');
+    wrap.className = 'filter-item';
+    wrap.innerHTML =
+      '<input type="checkbox" id="' + id + '" data-comp="' + escapeHtml(c) + '">' +
+      '<label for="' + id + '">' + escapeHtml(c) + '</label>';
+    list.appendChild(wrap);
+  });
+}
+
+function attachListeners() {
+  document.getElementById('playerSelect').addEventListener('change', function (e) {
+    STATE.selectedPlayer = e.target.value;
+    render();
+  });
+
+  document.getElementById('filter-all').addEventListener('change', function (e) {
+    if (e.target.checked) {
+      document.querySelectorAll('#filterList input[type=checkbox]').forEach(function (cb) { cb.checked = false; });
+      STATE.selectedCompetitions = [];
+    }
+    render();
+  });
+
+  document.querySelectorAll('#filterList input[type=checkbox]').forEach(function (cb) {
+    cb.addEventListener('change', function (e) {
+      var comp = e.target.dataset.comp;
+      if (e.target.checked) {
+        if (STATE.selectedCompetitions.indexOf(comp) === -1) STATE.selectedCompetitions.push(comp);
+        document.getElementById('filter-all').checked = false;
+      } else {
+        STATE.selectedCompetitions = STATE.selectedCompetitions.filter(function (c) { return c !== comp; });
+        if (STATE.selectedCompetitions.length === 0) {
+          document.getElementById('filter-all').checked = true;
+        }
+      }
+      render();
+    });
+  });
+
+  document.querySelectorAll('input[name=sort]').forEach(function (r) {
+    r.addEventListener('change', function (e) {
+      STATE.sortKey = e.target.value;
+      render();
+    });
+  });
+}
+
+// ============================================================
+//  フィルター
+// ============================================================
+function getFilteredRecords() {
+  var recs = STATE.allScores.filter(function (r) { return r.player === STATE.selectedPlayer; });
+  if (STATE.selectedCompetitions.length === 0) return recs;
+  return recs.filter(function (r) { return STATE.selectedCompetitions.indexOf(r.competition) !== -1; });
+}
+
+function getFilteredAllRecords() {
+  if (STATE.selectedCompetitions.length === 0) return STATE.allScores.slice();
+  return STATE.allScores.filter(function (r) { return STATE.selectedCompetitions.indexOf(r.competition) !== -1; });
+}
+
+// ============================================================
+//  計算
+// ============================================================
+function bestRecordForEvent(records, ev) {
+  var best = null;
+  records.forEach(function (r) {
+    var s = r[ev] && r[ev].score;
+    if (s == null) return;
+    if (!best || s > best[ev].score) best = r;
+  });
+  return best;
+}
+
+function top3AvgForEvent(records, ev) {
+  var scores = records.map(function (r) { return r[ev] && r[ev].score; }).filter(function (v) { return v != null; });
+  if (scores.length === 0) return null;
+  var events = records
+    .filter(function (r) { return r[ev] && r[ev].score != null; })
+    .sort(function (a,b) { return b[ev].score - a[ev].score; })
+    .slice(0, 3)
+    .map(function (r) { return r[ev]; });
+  var avg = function (key) {
+    var vals = events.map(function (e) { return e[key]; }).filter(function (v) { return v != null; });
+    if (vals.length === 0) return null;
+    return vals.reduce(function (s,v) { return s+v; }, 0) / vals.length;
+  };
+  return { D: avg('D'), E: avg('E'), ND: avg('ND'), SB: avg('SB'), score: avg('score') };
+}
+
+function eventStabilityPct(records, ev) {
+  var scores = records.map(function (r) { return r[ev] && r[ev].score; }).filter(function (v) { return v != null && v > 0; });
+  if (scores.length === 0) return null;
+  var max = Math.max.apply(null, scores);
+  if (!max) return null;
+  var avg = scores.reduce(function (s,v) { return s+v; }, 0) / scores.length;
+  return (avg / max) * 100;
+}
+
+function bestAARecord(records) {
+  var best = null;
+  records.forEach(function (r) {
+    if (r.aa && r.aa.score != null) {
+      if (!best || r.aa.score > best.aa.score) best = r;
+    }
+  });
+  return best;
+}
+
+// ============================================================
+//  描画
+// ============================================================
+function render() {
+  renderPersonalData();
+  renderPersonalCardsMobile();
+  renderRankingComparison();
+  renderRankingBest();
+  renderRankingTop3();
+}
+
+function switchTab(tabId) {
+  document.querySelectorAll('.tab').forEach(function (t) {
+    t.classList.toggle('active', t.dataset.tab === tabId);
+  });
+  document.querySelectorAll('.tab-content').forEach(function (c) {
+    c.classList.toggle('active', c.id === 'tab-' + tabId);
+  });
+  STATE.activeTab = tabId;
+
+  var playerWrap = document.querySelector('.player-select-wrap');
+  if (playerWrap) {
+    playerWrap.style.display = (tabId === 'personal') ? '' : 'none';
+  }
+}
+
+// ----- ランキング -----
+function buildRankingEntries(ev, mode) {
+  var filtered = getFilteredAllRecords();
+  var entries = [];
+
+  (STATE.worldRankings[ev] || []).forEach(function (r) {
+    if (r.score == null) return;
+    entries.push({
+      type: 'world', displayName: r.name,
+      D: r.D, E: r.E, ND: r.ND, SB: r.SB, score: r.score, isCurrent: false
+    });
+  });
+
+  var byPlayer = {};
+  filtered.forEach(function (r) {
+    if (!r[ev] || r[ev].score == null) return;
+    if (!byPlayer[r.player]) byPlayer[r.player] = [];
+    byPlayer[r.player].push(r);
+  });
+
+  Object.keys(byPlayer).forEach(function (player) {
+    var recs = byPlayer[player];
+    if (mode === 'best') {
+      var best = null;
+      recs.forEach(function (r) {
+        if (!best || r[ev].score > best[ev].score) best = r;
+      });
+      if (best) {
+        entries.push({
+          type: 'jp',
+          displayName: player + '【' + best.competition + '】',
+          D: best[ev].D, E: best[ev].E, ND: best[ev].ND, SB: best[ev].SB,
+          score: best[ev].score,
+          isCurrent: player === STATE.selectedPlayer
+        });
+      }
+    } else {
+      var sorted = recs.map(function (r) { return r[ev]; })
+        .sort(function (a,b) { return b.score - a.score; })
+        .slice(0, 3);
+      var avg = function (key) {
+        var vals = sorted.map(function (e) { return e[key]; }).filter(function (v) { return v != null; });
+        if (vals.length === 0) return null;
+        return vals.reduce(function (s,v) { return s+v; }, 0) / vals.length;
+      };
+      var cnt = sorted.length;
+      entries.push({
+        type: 'jp',
+        displayName: player + (cnt < 3 ? '【ベスト' + cnt + '平均】' : '【ベスト3平均】'),
+        D: avg('D'), E: avg('E'), ND: avg('ND'), SB: avg('SB'),
+        score: avg('score'),
+        isCurrent: player === STATE.selectedPlayer
+      });
+    }
+  });
+
+  entries.sort(function (a,b) {
+    var av = a.score == null ? -Infinity : a.score;
+    var bv = b.score == null ? -Infinity : b.score;
+    return bv - av;
+  });
+  return entries;
+}
+
+function renderRankingBest() {
+  var grid = document.getElementById('rankingBestGrid');
+  if (!grid) return;
+  grid.innerHTML = renderRankingGrid('best');
+}
+
+function renderRankingTop3() {
+  var grid = document.getElementById('rankingTop3Grid');
+  if (!grid) return;
+  grid.innerHTML = renderRankingGrid('top3');
+}
+
+function renderRankingGrid(mode) {
+  var events = ['fx','ph','sr','vt','pb','hb','aa'];
+  return events.map(function (ev) { return buildRankingBlock(ev, mode); }).join('');
+}
+
+function buildRankingBlock(ev, mode) {
+  var label = EVENT_LABELS[ev];
+  var isAA = (ev === 'aa');
+  var scoreHeader = isAA ? '合計' : '決定点';
+  var showSB = (ev !== 'ph');
+
+  var entries = buildRankingEntries(ev, mode);
+
+  var html = '<div class="ranking-block">';
+  html += '<div class="ranking-event-name">' + escapeHtml(label) + '</div>';
+  html += '<table class="ranking-table">';
+  html += '<thead><tr>' +
+    '<th>順位</th>' +
+    '<th style="text-align:left">選手</th>' +
+    '<th>D</th><th>E</th><th>ND</th>' +
+    (showSB ? '<th>SB</th>' : '') +
+    '<th>' + scoreHeader + '</th>' +
+    '</tr></thead>';
+  html += '<tbody>';
+
+  if (entries.length === 0) {
+    html += '<tr><td colspan="' + (showSB ? 7 : 6) + '" style="text-align:center;color:#999;padding:6px;">データがありません</td></tr>';
+  } else {
+    entries.forEach(function (e, i) {
+      var rank = i + 1;
+      var rankCls = rank <= 3 ? ' rank-' + rank : '';
+      var rowCls = e.isCurrent ? ' class="current-player"' : '';
+      var tagHtml = e.type === 'world'
+        ? '<span class="src-tag src-world">世</span>'
+        : '<span class="src-tag src-jp">日</span>';
+      html += '<tr' + rowCls + '>';
+      html += '<td class="rank-num' + rankCls + '">' + rank + '</td>';
+      html += '<td class="name">' + tagHtml + escapeHtml(e.displayName) + '</td>';
+      html += '<td>' + fmtNum(e.D, 1) + '</td>';
+      html += '<td>' + fmtNum(e.E, 3) + '</td>';
+      html += '<td>' + fmtNum(e.ND, 1) + '</td>';
+      if (showSB) html += '<td>' + fmtNum(e.SB, 1) + '</td>';
+      html += '<td class="score-cell">' + fmtNum(e.score, 3) + '</td>';
+      html += '</tr>';
+    });
+  }
+
+  html += '</tbody></table></div>';
+  return html;
+}
+
+// ----- 個人データ（PC/印刷） -----
+function renderPersonalData() {
+  var records = getFilteredRecords();
+  var aaBest = bestAARecord(records);
+  var aaLabel = aaBest ? 'AAベスト【' + aaBest.competition + '】' : 'AAベスト';
+
+  var allEv = ['fx','ph','sr','vt','pb','hb','aa'];
+  var stabMap = {};
+  allEv.forEach(function (ev) { stabMap[ev] = eventStabilityPct(records, ev); });
+
+  var ordered = allEv.map(function (ev) { return { ev: ev, val: stabMap[ev] }; })
+    .filter(function (o) { return o.val != null; })
+    .sort(function (a,b) { return b.val - a.val; });
+  var rankClass = {};
+  ordered.forEach(function (o, i) {
+    if (i < 2)      rankClass[o.ev] = 'rank-blue';
+    else if (i < 5) rankClass[o.ev] = 'rank-orange';
+    else            rankClass[o.ev] = 'rank-red';
+  });
+
+  document.getElementById('personalRow1').innerHTML =
+    buildPersonalTable(['fx','ph','sr'], records, aaBest, aaLabel, stabMap, rankClass);
+  document.getElementById('personalRow2').innerHTML =
+    buildPersonalTable(['vt','pb','hb','aa'], records, aaBest, aaLabel, stabMap, rankClass);
+
+  // 安定度ランクをモバイルでも使うため保持
+  STATE._stabMap = stabMap;
+  STATE._rankClass = rankClass;
+  STATE._aaBest = aaBest;
+  STATE._aaLabel = aaLabel;
+}
+
+function buildPersonalTable(eventList, records, aaBest, aaLabel, stabMap, rankClass) {
+  var html = '<table class="personal-table">';
+  html += '<thead>';
+  html += '<tr class="event-name-row">';
+  html += '<th class="label-col"></th>';
+  eventList.forEach(function (ev) {
+    var stab = stabMap[ev];
+    var pctStr = stab != null ? stab.toFixed(1) + '%' : '';
+    var cls = rankClass[ev] || '';
+    html += '<th colspan="5" class="event-name-cell">' +
+      '<span class="event-name">' + escapeHtml(EVENT_LABELS[ev]) + '</span>' +
+      '<span class="pct ' + cls + '">' + escapeHtml(pctStr) + '</span>' +
+      '</th>';
+  });
+  html += '</tr>';
+
+  html += '<tr class="col-headers-row">';
+  html += '<th class="label-col"></th>';
+  eventList.forEach(function (ev) {
+    var scoreLabel = ev === 'aa' ? '合計' : '決定点';
+    html += '<th>D</th><th>E</th><th>ND</th><th>SB</th>' +
+      '<th class="score-h">' + scoreLabel + '</th>';
+  });
+  html += '</tr>';
+  html += '</thead><tbody>';
+
+  html += '<tr class="row-best tip-row">';
+  html += '<td class="row-label">各種目ベスト</td>';
+  eventList.forEach(function (ev) {
+    var rec = bestRecordForEvent(records, ev);
+    var data = rec ? rec[ev] : null;
+    var tip = rec ? (rec.competition + (rec.date ? '（' + rec.date + '）' : '')) : '';
+    html += dataCells(data, tip);
+  });
+  html += '</tr>';
+
+  html += '<tr class="row-aa">';
+  html += '<td class="row-label">' + escapeHtml(aaLabel) + '</td>';
+  eventList.forEach(function (ev) {
+    var data = aaBest && aaBest[ev] && aaBest[ev].score != null ? aaBest[ev] : null;
+    html += dataCells(data, '');
+  });
+  html += '</tr>';
+
+  html += '<tr class="row-top3">';
+  html += '<td class="row-label">各種目ベスト3平均</td>';
+  eventList.forEach(function (ev) {
+    var avg = top3AvgForEvent(records, ev);
+    html += dataCells(avg, '');
+  });
+  html += '</tr>';
+
+  html += '</tbody></table>';
+  return html;
+}
+
+function dataCells(data, tooltip) {
+  var t = tooltip ? ' title="' + escapeHtml(tooltip) + '"' : '';
+  if (!data) {
+    return '<td' + t + '></td><td' + t + '></td><td' + t + '></td><td' + t + '></td>' +
+      '<td class="score-cell"' + t + '></td>';
+  }
+  return '<td' + t + '>' + fmtNum(data.D, 1) + '</td>' +
+    '<td' + t + '>' + fmtNum(data.E, 3) + '</td>' +
+    '<td' + t + '>' + fmtNum(data.ND, 1) + '</td>' +
+    '<td' + t + '>' + fmtNum(data.SB, 1) + '</td>' +
+    '<td class="score-cell"' + t + '>' + fmtNum(data.score, 3) + '</td>';
+}
+
+// ----- 個人データ（スマホ：種目ごとのカード） -----
+function renderPersonalCardsMobile() {
+  var box = document.getElementById('mPersonalCards');
+  if (!box) return;
+  var records = getFilteredRecords();
+  var allEv = ['fx','ph','sr','vt','pb','hb','aa'];
+  var stabMap = STATE._stabMap || {};
+  var rankClass = STATE._rankClass || {};
+  var aaBest = STATE._aaBest;
+
+  var html = '';
+  allEv.forEach(function (ev) {
+    var label = EVENT_LABELS[ev];
+    var stab = stabMap[ev];
+    var pctStr = stab != null ? stab.toFixed(1) + '%' : '';
+    var cls = rankClass[ev] || '';
+    var scoreLabel = ev === 'aa' ? '合計' : '決定点';
+
+    var best = bestRecordForEvent(records, ev);
+    var bestData = best ? best[ev] : null;
+    var bestComp = best ? best.competition : '';
+    var aaData = aaBest && aaBest[ev] && aaBest[ev].score != null ? aaBest[ev] : null;
+    var top3 = top3AvgForEvent(records, ev);
+
+    html += '<div class="m-card">';
+    html += '<div class="m-card-head"><span>' + escapeHtml(label) + '</span>' +
+      '<span class="pct ' + cls + '">' + escapeHtml(pctStr) + '</span></div>';
+
+    // 各種目ベスト
+    html += '<div class="m-sub best">各種目ベスト' +
+      (bestComp ? '　<span style="font-weight:500;color:#6b7280">' + escapeHtml(bestComp) + '</span>' : '') + '</div>';
+    html += mCardRows(bestData, scoreLabel);
+
+    // AAベスト時の値
+    if (ev !== 'aa') {
+      html += '<div class="m-sub aa">' + escapeHtml(STATE._aaLabel || 'AAベスト') + '</div>';
+      html += mCardRows(aaData, scoreLabel);
+    }
+
+    // ベスト3平均
+    html += '<div class="m-sub top3">各種目ベスト3平均</div>';
+    html += mCardRows(top3, scoreLabel);
+
+    html += '</div>';
+  });
+
+  box.innerHTML = html;
+}
+
+function mCardRows(data, scoreLabel) {
+  if (!data) {
+    return '<table><tr><td colspan="2" style="text-align:center;color:#bbb;padding:8px;">データなし</td></tr></table>';
+  }
+  var html = '<table>';
+  html += '<tr><td>D</td><td>' + fmtNum(data.D, 1) + '</td></tr>';
+  html += '<tr><td>E</td><td>' + fmtNum(data.E, 3) + '</td></tr>';
+  html += '<tr><td>ND</td><td>' + fmtNum(data.ND, 1) + '</td></tr>';
+  html += '<tr><td>SB</td><td>' + fmtNum(data.SB, 1) + '</td></tr>';
+  html += '<tr><td style="font-weight:700;color:#1f2937">' + escapeHtml(scoreLabel) +
+    '</td><td style="font-weight:700">' + fmtNum(data.score, 3) + '</td></tr>';
+  html += '</table>';
+  return html;
+}
+
+// ----- 世界ランキング比較 -----
+function renderRankingComparison() {
+  var records = getFilteredRecords();
+  var playerName = STATE.selectedPlayer || '';
+
+  var row1 = ['fx','ph','sr'];
+  var row2 = ['vt','pb','hb'];
+
+  document.getElementById('compareRow1').innerHTML =
+    row1.map(function (ev) { return buildCompareBlock(ev, records, playerName); }).join('');
+  document.getElementById('compareRow2').innerHTML =
+    row2.map(function (ev) { return buildCompareBlock(ev, records, playerName); }).join('');
+
+  document.getElementById('vtAvgBlock').innerHTML = buildVtAvgBlock(records, playerName);
+  document.getElementById('aaBlock').innerHTML = buildAaBlock(records, playerName);
+}
+
+function buildCompareBlock(ev, records, playerName) {
+  var label = EVENT_LABELS[ev];
+  var worldList = (STATE.worldRankings[ev] || []).map(function (r) {
+    return { name: r.name, D: r.D, E: r.E, ND: r.ND, SB: r.SB, score: r.score, isPlayer: false };
+  });
+
+  var best = bestRecordForEvent(records, ev);
+  if (best) {
+    var d = best[ev];
+    var compLabel = playerName + '【' + best.competition + '】';
+    worldList.push({ name: compLabel, D: d.D, E: d.E, ND: d.ND, SB: d.SB, score: d.score, isPlayer: true });
+  } else {
+    worldList.push({ name: playerName, D: null, E: null, ND: null, SB: null, score: null, isPlayer: true });
+  }
+
+  var key = STATE.sortKey;
+  worldList.sort(function (a,b) {
+    var av = a[key] == null ? -Infinity : a[key];
+    var bv = b[key] == null ? -Infinity : b[key];
+    return bv - av;
+  });
+
+  var showSB = (ev !== 'ph');
+
+  var html = '<div class="compare-block">';
+  html += '<div class="compare-event-name">' + escapeHtml(label) + '</div>';
+  html += '<table class="compare-table"><tbody>';
+  worldList.forEach(function (r) {
+    html += '<tr' + (r.isPlayer ? ' class="player-row"' : '') + '>';
+    html += '<td class="name">' + escapeHtml(r.name || '') + '</td>';
+    html += '<td>' + fmtNum(r.D, 1) + '</td>';
+    html += '<td>' + fmtNum(r.E, 3) + '</td>';
+    html += '<td>' + fmtNum(r.ND, 1) + '</td>';
+    if (showSB) html += '<td>' + fmtNum(r.SB, 1) + '</td>';
+    html += '<td class="score-cell">' + fmtNum(r.score, 3) + '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+function buildVtAvgBlock(records, playerName) {
+  var list = (STATE.worldRankings.vt || []).map(function (r) {
+    return { name: r.name, vault1: r.vault1, vault2: r.vault2, avg: r.avg, isPlayer: false };
+  });
+
+  var vtScores = records
+    .filter(function (r) { return r.vt && r.vt.score != null; })
+    .sort(function (a,b) { return b.vt.score - a.vt.score; });
+
+  if (vtScores.length >= 1) {
+    var r1 = vtScores[0];
+    var r2 = vtScores[1] || null;
+    var avg = r2 ? (r1.vt.score + r2.vt.score) / 2 : r1.vt.score;
+    var compLabel;
+    if (r2 && r1.competition !== r2.competition) {
+      compLabel = playerName + '【' + r1.competition + ' / ' + r2.competition + '】';
+    } else {
+      compLabel = playerName + '【' + r1.competition + '】';
+    }
+    list.push({ name: compLabel, vault1: r1.vt, vault2: r2 ? r2.vt : null, avg: avg, isPlayer: true });
+  } else {
+    list.push({ name: playerName, vault1: null, vault2: null, avg: null, isPlayer: true });
+  }
+
+  list.sort(function (a,b) {
+    var av = a.avg == null ? -Infinity : a.avg;
+    var bv = b.avg == null ? -Infinity : b.avg;
+    return bv - av;
+  });
+
+  var html = '<table class="vt-table">';
+  html += '<tr><td colspan="6" class="compare-event-name">跳馬２本平均</td></tr>';
+  list.forEach(function (r) {
+    var rowSpan = ' rowspan="2"';
+    html += '<tr' + (r.isPlayer ? ' class="player-row"' : '') + '>';
+    html += '<td class="name"' + rowSpan + '>' + escapeHtml(r.name || '') + '</td>';
+    if (r.vault1) {
+      html += '<td>' + fmtNum(r.vault1.D, 1) + '</td>';
+      html += '<td>' + fmtNum(r.vault1.E, 3) + '</td>';
+      html += '<td>' + fmtNum(r.vault1.ND, 1) + '</td>';
+      html += '<td>' + fmtNum(r.vault1.SB, 1) + '</td>';
+      html += '<td>' + fmtNum(r.vault1.score, 3) + '</td>';
+    } else {
+      html += '<td></td><td></td><td></td><td></td><td></td>';
+    }
+    html += '<td class="avg"' + rowSpan + '>' + fmtNum(r.avg, 3) + '</td>';
+    html += '</tr>';
+    html += '<tr' + (r.isPlayer ? ' class="player-row"' : '') + '>';
+    if (r.vault2) {
+      html += '<td>' + fmtNum(r.vault2.D, 1) + '</td>';
+      html += '<td>' + fmtNum(r.vault2.E, 3) + '</td>';
+      html += '<td>' + fmtNum(r.vault2.ND, 1) + '</td>';
+      html += '<td>' + fmtNum(r.vault2.SB, 1) + '</td>';
+      html += '<td>' + fmtNum(r.vault2.score, 3) + '</td>';
+    } else {
+      html += '<td></td><td></td><td></td><td></td><td></td>';
+    }
+    html += '</tr>';
+  });
+  html += '</table>';
+  return html;
+}
+
+function buildAaBlock(records, playerName) {
+  var list = (STATE.worldRankings.aa || []).map(function (r) {
+    return { name: r.name, D: r.D, E: r.E, ND: r.ND, SB: r.SB, score: r.score, isPlayer: false };
+  });
+
+  var best = bestRecordForEvent(records, 'aa');
+  if (best) {
+    var d = best.aa;
+    var compLabel = playerName + '【' + best.competition + '】';
+    list.push({ name: compLabel, D: d.D, E: d.E, ND: d.ND, SB: d.SB, score: d.score, isPlayer: true });
+  } else {
+    list.push({ name: playerName, D: null, E: null, ND: null, SB: null, score: null, isPlayer: true });
+  }
+
+  var key = STATE.sortKey;
+  list.sort(function (a,b) {
+    var av = a[key] == null ? -Infinity : a[key];
+    var bv = b[key] == null ? -Infinity : b[key];
+    return bv - av;
+  });
+
+  var html = '<div class="compare-block">';
+  html += '<div class="compare-event-name">個人総合</div>';
+  html += '<table class="compare-table"><tbody>';
+  list.forEach(function (r) {
+    html += '<tr' + (r.isPlayer ? ' class="player-row"' : '') + '>';
+    html += '<td class="name">' + escapeHtml(r.name || '') + '</td>';
+    html += '<td>' + fmtNum(r.D, 1) + '</td>';
+    html += '<td>' + fmtNum(r.E, 3) + '</td>';
+    html += '<td>' + fmtNum(r.ND, 1) + '</td>';
+    html += '<td>' + fmtNum(r.SB, 1) + '</td>';
+    html += '<td class="score-cell">' + fmtNum(r.score, 3) + '</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+// ============================================================
+//  ヘルパ
+// ============================================================
+function fmtNum(v, digits) {
+  if (v === null || v === undefined || v === '' || isNaN(v)) return '';
+  return Number(v).toFixed(digits);
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function printPage() { window.print(); }
+
+function saveAsImage() {
+  if (typeof html2canvas === 'undefined') {
+    alert('画像化ライブラリを読み込めませんでした。\n「印刷 / PDF保存」ボタンからPDFとして保存してください。');
+    return;
+  }
+  var target = document.getElementById('app');
+  var buttons = document.querySelector('.action-buttons');
+  var prevDisp = buttons ? buttons.style.display : '';
+  if (buttons) buttons.style.display = 'none';
+
+  html2canvas(target, { backgroundColor: '#ffffff', scale: 2, useCORS: true, logging: false })
+    .then(function (canvas) {
+      if (buttons) buttons.style.display = prevDisp;
+      var url = canvas.toDataURL('image/png');
+      var a = document.createElement('a');
+      var playerName = (STATE.selectedPlayer || 'gymnast').replace(/\s+/g, '_');
+      a.href = url;
+      a.download = 'Gymnast_' + playerName + '.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    })
+    .catch(function (err) {
+      if (buttons) buttons.style.display = prevDisp;
+      alert('画像の生成に失敗しました。\n「印刷 / PDF保存」ボタンをご利用ください。\n\n詳細: ' + (err && err.message ? err.message : err));
+    });
+}
+</script>
+
+</body>
+</html>
