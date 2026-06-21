@@ -765,12 +765,14 @@ const LS_TOKEN = 'gymnast_token';
 const LS_STAFF = 'gymnast_staff';
 
 // ============================================================
-//  API 呼び出し（CORS回避のため text/plain で POST）
+//  API 呼び出し
+//  GAS は /exec → googleusercontent.com にリダイレクトして応答する。
+//  CORSプリフライトを発生させないため、独自ヘッダを付けない
+//  「シンプルリクエスト」で送る（bodyはプレーン文字列のJSON）。
 // ============================================================
 function apiCall(payload) {
   return fetch(API_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(payload),
     redirect: 'follow'
   }).then(function (res) {
