@@ -625,6 +625,41 @@
     /* PCではモバイル専用カードを隠す */
     @media screen and (min-width: 761px) {
       .m-personal-cards { display: none !important; }
+
+      /* ===== PC表示：余白を活かして全幅＋文字拡大 ===== */
+      body { padding: 16px 28px; }
+
+      /* 個人データ：テーブルを横幅いっぱいに広げる */
+      .personal-table { width: 100%; font-size: 15px; table-layout: fixed; }
+      .personal-table th, .personal-table td { padding: 6px 8px; }
+      .personal-table td.row-label,
+      .personal-table th.label-col { width: 190px; font-size: 15px; }
+      .personal-table .event-name-cell { font-size: 16px; padding: 7px 8px; }
+      .personal-table .event-name-cell .pct { font-size: 14px; margin-left: 12px; }
+      .personal-table .col-headers-row th { font-size: 13px; padding: 4px 6px; }
+
+      /* 世界ランキング比較：3カラムを全幅に */
+      .compare-grid { gap: 12px; }
+      .compare-table { font-size: 14px; }
+      .compare-table td { padding: 6px 9px; }
+      .compare-event-name { font-size: 15px; padding: 6px 0; }
+      .vt-table { font-size: 14px; }
+      .vt-table td { padding: 6px 9px; }
+      .vt-table .compare-event-name { font-size: 15px; padding: 6px 0; }
+
+      /* ベスト得点 / ベスト3 ランキング */
+      .ranking-grid { gap: 14px; }
+      .ranking-table { font-size: 14px; }
+      .ranking-table thead th { font-size: 12px; padding: 4px 6px; }
+      .ranking-table td { padding: 6px 8px; }
+      .ranking-event-name { font-size: 15px; padding: 6px 0; }
+      .src-tag { font-size: 11px; }
+
+      /* 見出し・補足を少し大きく */
+      .section-title { font-size: 16px; }
+      .ranking-controls .label { font-size: 16px; }
+      .stability-note { font-size: 12px; }
+      .app-title { font-size: 22px; }
     }
     @media print {
       .m-personal-cards { display: none !important; }
@@ -759,7 +794,7 @@ if ('serviceWorker' in navigator) {
 // ============================================================
 //  設定：GAS ウェブアプリの /exec URL をここに貼る
 // ============================================================
-const API_URL = 'https://script.google.com/macros/s/AKfycbxtjZNQ2xFtN7hDDsyRXVLqeA2PNCvxLYKLLdpAKgV0rH60L5hDFkIiBsnxTl4fm7Sn/exec';
+const API_URL = 'PASTE_YOUR_GAS_EXEC_URL_HERE';
 
 const LS_TOKEN = 'gymnast_token';
 const LS_STAFF = 'gymnast_staff';
