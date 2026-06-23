@@ -820,10 +820,13 @@ function apiCall(payload) {
     var src = API_URL + '?' + params.join('&');
 
     var script = document.createElement('script');
+    var done = false;
     var timer = setTimeout(function () {
+      if (done) return;
+      done = true;
       cleanup();
-      reject(new Error('応答がタイムアウトしました'));
-    }, 30000);
+      reject(new Error('応答がタイムアウトしました（' + (payload.action || '') + '）'));
+    }, 60000);
 
     function cleanup() {
       clearTimeout(timer);
@@ -832,13 +835,17 @@ function apiCall(payload) {
     }
 
     window[cbName] = function (data) {
+      if (done) return;
+      done = true;
       cleanup();
       resolve(data);
     };
 
-    script.onerror = function () {
+    script.onerror = function (ev) {
+      if (done) return;
+      done = true;
       cleanup();
-      reject(new Error('通信に失敗しました'));
+      reject(new Error('スクリプト読込失敗（' + (payload.action || '') + '）URL長=' + src.length));
     };
 
     script.src = src;
