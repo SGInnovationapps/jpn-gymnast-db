@@ -6,7 +6,7 @@
 // ============================================================
 
 // ★ ファイルを更新したら、この数字を上げると確実に再キャッシュされます
-const CACHE_VERSION = 'v2';
+const CACHE_VERSION = 'v3';
 const CACHE_NAME = 'gymnast-' + CACHE_VERSION;
 
 // 事前キャッシュするアプリ外枠
